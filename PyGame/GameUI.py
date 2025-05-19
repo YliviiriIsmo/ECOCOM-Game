@@ -38,7 +38,7 @@ class GameUI:
             "5.PSU.png": "Virtalahde",
             "6.naytonohjain.png": "Naytonohjain",
             "7.tuuletin.png": "Tuuletin",
-            "8.heatsink.png": "Lamponielu",
+            "8.heatsink.png": "Jaahdytyssiili",
             "9.syotto-tulostus.png": "Oheislaitteet",
             "10.verkkosovitin.png": "Verkkosovitin"
         }

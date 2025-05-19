@@ -49,7 +49,7 @@ ITEM_NAMES = {
     "5.PSU.png": "Virtalahde",
     "6.naytonohjain.png": "Naytonohjain",
     "7.tuuletin.png": "Tuuletin",
-    "8.heatsink.png": "Lamponielu",
+    "8.heatsink.png": "Jaahdytyssiili",
     "9.syotto-tulostus.png": "Oheislaitteet",
     "10.verkkosovitin.png": "Verkkosovitin",
     "triple_score.png": "Piste Boosteri"
@@ -136,8 +136,8 @@ class EnemySpawner:
         self.screen = screen
         self.game_ui = game_ui  # Käytetään samaa GameUI-instanssia
         self.WIDTH, self.HEIGHT = screen.get_size()  # Haetaan oikea koko
-        self.initial_min_spawn_interval = 0.5 #Minimi spawni aika (säädä näitä jos haluat vaikeuttaa peliä)
-        self.initial_max_spawn_interval = 5 #Maksimi spawni aika (säädä näitä jos haluat vaikeuttaa peliä)
+        self.initial_min_spawn_interval = 0.7 #Minimi spawni aika (säädä näitä jos haluat vaikeuttaa peliä)
+        self.initial_max_spawn_interval = 3 #Maksimi spawni aika (säädä näitä jos haluat vaikeuttaa peliä)
         self.min_spawn_interval = self.initial_min_spawn_interval
         self.max_spawn_interval = self.initial_max_spawn_interval
         self.last_spawn_time = pygame.time.get_ticks()
@@ -153,8 +153,8 @@ class EnemySpawner:
         # Päivitä vaikeustaso
         self.update_difficulty(elapsed_time)
 
-        min_interval_ms = int(self.min_spawn_interval * 3000)
-        max_interval_ms = int(self.max_spawn_interval * 1000)
+        min_interval_ms = int(self.min_spawn_interval * 1000)
+        max_interval_ms = int(self.max_spawn_interval * 7000)
 
         if min_interval_ms < max_interval_ms:
             if current_time - self.last_spawn_time > random.randint(min_interval_ms, max_interval_ms):
@@ -202,10 +202,10 @@ class EnemySpawner:
 
         if side == 'left':
             x = 0  # Vasen reuna
-            speed = 2  # Liikkuu oikealle
+            speed = 4  # Liikkuu oikealle
         else:
             x = self.WIDTH - 100  # Oikea reuna
-            speed = -2  # Liikkuu vasemmalle
+            speed = -4  # Liikkuu vasemmalle
         return x, y, speed, sprite_image
     
 

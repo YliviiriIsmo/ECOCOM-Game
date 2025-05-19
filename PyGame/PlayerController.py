@@ -5,6 +5,7 @@ from game_over import GameOver
 from EnemySpawner import EnemySpawner
 from GameUI import GameUI, ScoreDisplay
 import game_music
+from controller import Controller
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, sprite_image, scale_x, scale_y):
@@ -20,7 +21,7 @@ class Player(pygame.sprite.Sprite):
 
         # Skaalattu törmäysalue
         self.rect = self.image.get_rect(center=(x, y))
-        self.rect.inflate_ip(15 * self.scale_x, 25 * self.scale_y)
+        self.rect.inflate_ip(5 * self.scale_x, 5 * self.scale_y)
 
         self.flash_timer = 0
         self.flashing = False
@@ -30,7 +31,7 @@ class Player(pygame.sprite.Sprite):
 
 main_menu_instance = None  # Globaali päävalikko-instanssi
 
-def run_game(screen):
+def run_game(screen, controller):
 
     global main_menu_instance
 
@@ -159,15 +160,6 @@ def run_game(screen):
     font = pygame.font.Font(None, 50)  # Fontti pisteille
     score_display = ScoreDisplay(screen, font, score_icon, list(game_ui.item_images.keys()))
 
-    # Peliohjain
-    joystick = None
-    if pygame.joystick.get_count() > 0:
-        joystick = pygame.joystick.Joystick(0)
-        joystick.init()
-
-    # Akseliarvojen suodatin (ohjainliikkeen herkkyys)
-    DEADZONE = 0.2 * SCALE_X  # Jos arvo on alle tämän, se nollataan
-
     font = pygame.font.Font(None, int(50 * SCALE_Y))  # Fontti ajalle
     start_time = pygame.time.get_ticks()  # Tallennetaan aloitusaika
 
@@ -175,42 +167,18 @@ def run_game(screen):
     while running:
         dt = clock.tick(60) / 1000  # Muutetaan millisekunnit sekunneiksi
 
-        # Tapahtumat
-        for event in pygame.event.get():
+        # Tapahtumat        
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 running = False
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False
 
-        # Liikkuminen
-        keys = pygame.key.get_pressed()
-        movement = pygame.Vector2(0, 0)
+        movement = controller.get_movement(events)
 
-        # Näppäimistö
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            movement.x = -1
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            movement.x = 1
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
-            movement.y = -1
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            movement.y = 1
-
-        # Peliohjain
-        if joystick:
-            joy_x = joystick.get_axis(0)
-            joy_y = joystick.get_axis(1)
-
-            # Suodatetaan pienet liikkeet
-            if abs(joy_x) > DEADZONE:
-                movement.x += joy_x
-            if abs(joy_y) > DEADZONE:
-                movement.y += joy_y
-
-        # Normalisoidaan liikevektori
         if movement.length() > 0:
             movement = movement.normalize() * move_speed * dt
 
@@ -327,7 +295,7 @@ def run_game(screen):
             if action == "save":
                 game_over_screen.save_game()
 
-            action = game_over_screen.show_screen()  # Tämä estää välittömän pelin uudelleenkäynnistymisen
+            #action = game_over_screen.show_screen()  # Tämä estää välittömän pelin uudelleenkäynnistymisen
 
             if action == "restart":
                 return run_game(screen)

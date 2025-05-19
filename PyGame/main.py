@@ -1,8 +1,10 @@
 import pygame
+from controller import Controller
 from main_menu import MainMenu
 
 # Alustetaan Pygame
 pygame.init()
+pygame.joystick.init()
 
 # Näytön asetukset
 # Haetaan näytön koko
@@ -15,19 +17,20 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 pygame.display.set_caption("Pelin Päävalikko")
 
 # Luodaan päävalikko
-menu = MainMenu(screen)
+controller = Controller()
+controller.reload_config()  # Lataa ohjainkonfiguraatio heti ohjelman alussa
+menu = MainMenu(screen, controller=controller)
 
 # Pelisilmukka
 running = True
 while running:
-    for event in pygame.event.get():
+    events = pygame.event.get()
+    for event in events:
         if event.type == pygame.QUIT:
             running = False
 
-    menu.update()
+    menu.update(events)
     menu.draw()
-    pygame.display.update()
-    
     pygame.display.flip()
 
 # Pygamen lopetus (vasta pelin jälkeen)

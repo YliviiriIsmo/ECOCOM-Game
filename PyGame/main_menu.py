@@ -3,10 +3,13 @@ import os
 import time
 from game_data import GameData 
 import game_music
+from controller import Controller
 
 class MainMenu:
-    def __init__(self, screen):
+    def __init__(self, screen, controller=None):
         self.screen = screen
+        self.controller = controller or Controller() # Alustetaan ohjain
+        self.controller.reload_config()  # Lataa ohjainkonfiguraatio uudelleen
         self.WIDTH, self.HEIGHT = screen.get_size()
         self.SCALE_X = self.WIDTH / 1920
         self.SCALE_Y = self.HEIGHT / 1080
@@ -62,6 +65,8 @@ class MainMenu:
                         load_sprite("leaderboard_button_hover.png", 0.3, 0.1)),
             "Tekijä": (load_sprite("credits_button.png", 0.3, 0.1),
                     load_sprite("credits_button_hover.png", 0.3, 0.1)),
+            "Ohjainasetukset": (load_sprite("controller_config_button.png", 0.3, 0.1),  # Uusi painike
+                    load_sprite("controller_config_button_hover.png", 0.3, 0.1)),
             "Sulje": (load_sprite("quit_button.png", 0.3, 0.1),
                     load_sprite("quit_button_hover.png", 0.3, 0.1)),
         }
@@ -72,6 +77,7 @@ class MainMenu:
             ("Ohjeet", self.toggle_instructions),
             ("Ennätys", self.toggle_leaderboard),
             ("Tekijä", self.toggle_credits),
+            ("Ohjainasetukset", self.open_controller_config),  # Uusi painike
             ("Sulje", self.quit_game),
         ]
 
@@ -82,7 +88,7 @@ class MainMenu:
         # Lasketaan painikkeiden paikat suhteessa näytön kokoon
         for i, (text, _) in enumerate(self.buttons):
             x = self.WIDTH * 0.68  # 70% näytön leveydestä
-            y = self.margin + i * (self.button_height + self.HEIGHT * 0.05)  # 5% näytön korkeudesta marginaalina
+            y = self.margin + i * (self.button_height + self.HEIGHT * 0.03)  # 3% näytön korkeudesta marginaalina
             self.button_rects.append(pygame.Rect(x, y, self.button_width, self.button_height))
 
         # Skaalaa popup-kuvat suhteessa näytön kokoon
@@ -208,78 +214,28 @@ class MainMenu:
                 title_y = self.popup_rect.y + self.popup_rect.height * 0.07  # 5% popupin korkeudesta marginaalina
                 self.screen.blit(title, (title_x, title_y))
 
-       
             # Näytetään koko ruudun kokoinen logo, jos peli on käynnistymässä
             if self.showing_logo:
                 self.screen.blit(self.start_game_logo, (0, 0))  # Piirtää koko ruutuun
 
         pygame.display.flip()
-            
 
-    def update(self):
+    def update(self, events):
         # Jos logo näkyy, odotetaan ja sitten aloitetaan peli
         if self.showing_logo:
             if time.time() - self.start_time > 2:
                 self.showing_logo = False
                 self.start_game_now()
             return
+        
+        # päivitä inputit
+        self.selected_index = self.controller.handle_menu_navigation(self.selected_index, self.buttons, events)
 
-    # Hiiren tapahtumat
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_click = pygame.mouse.get_pressed()
+        if self.controller.confirm_selection():
+            _, action = self.buttons[self.selected_index]
+            action()
 
-        for i, (_, action) in enumerate(self.buttons):
-            if self.button_rects[i].collidepoint(mouse_pos):
-                self.selected_index = i  # Asetetaan hover-painike valituksi
-                #game_music.play_button_hover()  # Soitetaan hover-ääniefekti
-                if mouse_click[0]:  # Hiiren vasen painike
-                    #game_music.play_button_select()  # Soitetaan valinta-ääniefekti
-                    action()
-
-        # Näppäimistö
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP] or keys[pygame.K_w]:  # Siirrytään ylöspäin
-            if time.time() - self.last_input_time > 0.15: 
-                self.selected_index = (self.selected_index - 1) % len(self.buttons)
-                #game_music.play_button_hover()  # Soitetaan hover-ääniefekti
-                self.last_input_time = time.time()
-
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]:  # Siirrytään alaspäin
-            if time.time() - self.last_input_time > 0.15:
-                self.selected_index = (self.selected_index + 1) % len(self.buttons)
-                #game_music.play_button_hover()  # Soitetaan hover-ääniefekti
-                self.last_input_time = time.time()
-
-        if keys[pygame.K_SPACE] or keys[pygame.K_RETURN]:  # Valitaan painike
-            if time.time() - self.last_input_time > 0.15:
-                #game_music.play_button_select()  # Soitetaan valinta-ääniefekti
-                self.buttons[self.selected_index][1]()  # Suoritetaan funktio
-                self.last_input_time = time.time()
-
-        # Ohjain
-        if self.joystick:
-            joystick_y = self.joystick.get_axis(1)  # Y-akseli
-            hat_x, hat_y = self.joystick.get_hat(0)  # D-pad
-
-            if joystick_y < -0.5 or hat_y == 1:  # Liikutaan ylöspäin
-                if time.time() - self.last_input_time > 0.15:
-                    self.selected_index = (self.selected_index - 1) % len(self.buttons)
-                    self.last_input_time = time.time()
-
-            if joystick_y > 0.5 or hat_y == -1:  # Liikutaan alaspäin
-                if time.time() - self.last_input_time > 0.15:
-                    self.selected_index = (self.selected_index + 1) % len(self.buttons)
-                    self.last_input_time = time.time()
-
-            if self.joystick.get_button(0):  # A-painike painettu
-                if time.time() - self.last_input_time > 0.15:
-                    self.buttons[self.selected_index][1]()
-                    self.last_input_time = time.time()
-
-
-    # Poista pop-up painamalla ESC
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:
+        if self.controller.esc_pressed():
             self.popup = None
 
     def start_game(self):
@@ -290,7 +246,7 @@ class MainMenu:
     def start_game_now(self):
         """ Käynnistää peli-ikkunan PlayerControllerilla """
         from PlayerController import run_game
-        run_game(self.screen)
+        run_game(self.screen, self.controller)
 
     def toggle_instructions(self):
         """ Näyttää tai piilottaa ohjeet """
@@ -301,7 +257,7 @@ class MainMenu:
             self.popup_content = [
                 "Liiku: Ohjainsauvalla / WASD-nuolilla",
                 "Tavoite: Kerää tietokoneenosia ja saa pisteitä!",
-                "Vältä vääriä esineitä ja hiiriä!",
+                "Vältä vääriä esineitä omenia ja peliohjaimia, sekä hiiriä!",
                 "",
                 "Onnea peliin!"
             ]
@@ -342,12 +298,19 @@ class MainMenu:
                 "",
                 "Kiitos pelaamisesta!"
             ]
+    def open_controller_config(self):
+        import controller_config
+        controller_config.run(self.screen)
+        self.controller.reload_config()  # Lataa uudet asetukset tiedostosta
 
     def reset_state(self):
         """Nollaa valikon tilan, kun peli päättyy ja palataan takaisin"""
         self.showing_logo = False
         self.popup = None
         self.popup_content = None
+        self.selected_index = 0  # Nollaa valittu painike
+        self.last_input_time = 0  # Nollaa syötteen aikaleima
+        self.controller.reload_config()  # Lataa ohjainkonfiguraatio uudelleen
 
     def quit_game(self):
         """ Sulkee pelin """
